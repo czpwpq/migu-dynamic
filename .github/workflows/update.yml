@@ -1,32 +1,47 @@
-name: Update Migu Playlist
+name: Update CCTV5+ m3u
+
+permissions:
+  contents: write   # 关键：允许写入仓库
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # 每3小时执行一次
-  workflow_dispatch:         # 手动触发
+    - cron: "0 */3 * * *"   # 每3小时
+  workflow_dispatch:         # 允许手动触发
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install deps
         run: pip install requests
 
-      - name: Run update script
-        run: python update_migu.py
+      - name: Run scraper
+        id: runpy
+        run: |
+          set -e
+          python update_migu.py || EXIT=$?
+          # 把退出码传给后续步骤（78=无变化）
+          echo "code=${EXIT:-0}" >> $GITHUB_OUTPUT
 
-      - name: Commit and push changes
+      - name: Commit changes
+        if: steps.runpy.outputs.code != '78'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add migu.m3u
-          git commit -m "Update migu.m3u" || echo "No changes"
-          git push
+          git add cctv5plus.m3u
+          git commit -m "chore: refresh cctv5plus.m3u $(date -u '+%Y-%m-%dT%H:%M:%SZ')" || echo "No changes"
+
+      - name: Push
+        if: steps.runpy.outputs.code != '78'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
