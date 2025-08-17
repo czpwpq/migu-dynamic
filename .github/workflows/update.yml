@@ -1,30 +1,32 @@
-name: 更新 CCTV5+ 动态链接
+name: Update Migu Playlist
 
 on:
   schedule:
-    - cron: "0 */3 * * *"   # 每3小时运行一次
-  workflow_dispatch:        # 允许手动触发
+    - cron: "0 */3 * * *"   # 每3小时执行一次
+  workflow_dispatch:         # 手动触发
 
 jobs:
   update:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 拉取仓库
-        uses: actions/checkout@v2
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: 设置 Python
-        uses: actions/setup-python@v2
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
-      - name: 安装依赖
+      - name: Install dependencies
         run: pip install requests
 
-      - name: 运行脚本获取链接
-        run: python fetch_migu.py
+      - name: Run update script
+        run: python update_migu.py
 
-      - name: 提交更新
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add migu.m3u
+          git commit -m "Update migu.m3u" || echo "No changes"
+          git push
