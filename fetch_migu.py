@@ -1,20 +1,26 @@
 import requests
 import re
 
-url = "https://gitee.com/dream-deve/migu_video/raw/main/interface-aptv.txt"
+def fetch_migu_url():
+    # 这里写你原来的获取逻辑
+    # 假设最后能拿到 url
+    resp = requests.get("https://xxxx")  # 示例请求
+    match = re.search(r"https://[^\s]+\.m3u8", resp.text)
+    if match:
+        return match.group(0)
+    return None
 
-resp = requests.get(url)
-resp.encoding = "utf-8"
-text = resp.text
+if __name__ == "__main__":
+    url = fetch_migu_url()
+    if url:
+        print(f"获取到的地址: {url}")
 
-# 提取 CCTV5+ 体育赛事
-pattern = re.compile(r'#EXTINF:-1.*CCTV5\+体育赛事.*\n(http[^\s]+)')
-match = pattern.search(text)
+        # 写入 m3u 文件
+        with open("migu.m3u", "w", encoding="utf-8") as f:
+            f.write("#EXTM3U\n")
+            f.write("#EXTINF:-1,咪咕直播\n")
+            f.write(url + "\n")
 
-if match:
-    m3u8_url = match.group(1)
-    print("提取到的地址：", m3u8_url)
-    with open("cctv5plus.m3u8", "w", encoding="utf-8") as f:
-        f.write(m3u8_url + "\n")
-else:
-    print("未找到 CCTV5+ 体育赛事链接")
+        print("已生成 migu.m3u 文件")
+    else:
+        print("未获取到地址")
